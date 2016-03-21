@@ -1,11 +1,8 @@
 <?php
 
-// new libcurl library will be written below; currently using forkcurl library as a template
+class Segment_Consumer_LibCurl extends Segment_QueueConsumer {
 
-class Segment_Consumer_LibCurl extends Segment_QueueConsumer { // should this extend the Segment_QueueConsumer or Segment_Consumer?
-
-  protected $type = "LibCurl";  //LibCurl is a protected class property
-
+  protected $type = "LibCurl";
 
   /**
    * Creates a new queued fork consumer which queues fork and identify
@@ -30,9 +27,6 @@ class Segment_Consumer_LibCurl extends Segment_QueueConsumer { // should this ex
 
     $body = $this->payload($messages);
     $payload = json_encode($body);
-
-    # Escape for shell usage.
-    $payload = escapeshellarg($payload);
     $secret = $this->secret;
 
     $protocol = $this->ssl() ? "https://" : "http://";
@@ -40,19 +34,41 @@ class Segment_Consumer_LibCurl extends Segment_QueueConsumer { // should this ex
     $path = "/v1/import";
     $url = $protocol . $host . $path;
 
-    $cmd = "curl -u $secret: -X POST -H 'Content-Type: application/json'";
-    $cmd.= " -d " . $payload . " '" . $url . "'";
+    // open connection
+    $ch = curl_init();
 
-    if (!$this->debug()) {
-      $cmd .= " > /dev/null 2>&1 &";
+    // set the url, number of POST vars, POST data
+    curl_setopt($ch, CURLOPT_USERPWD, $secret . ':');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+    // set variables for headers
+    $header = array();
+    $header[] = 'Content-Type: application/json';
+
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+
+    // execute post
+    curl_exec($ch); // this method is "not allowed in the console"
+
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    // if http code does not equal 200, write to a temporary file?
+    // ignore response?
+
+    # Escape for shell usage.
+    $payload = escapeshellarg($payload);
+
+    if ($httpCode != 200 or !$httpCode) {
+      $payload .= " >> errors.txt"; // error "command not found"
+      exec($payload, $output, $exit);
     }
 
-    exec($cmd, $output, $exit);
+    //close connection
+    curl_close($ch);
 
-    if ($exit != 0) {
-      $this->handleError($exit, $output);
-    }
+    // what to do with responses if user enabled debug mode?
 
-    return $exit == 0;
   }
 }
