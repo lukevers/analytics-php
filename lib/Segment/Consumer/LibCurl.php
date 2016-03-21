@@ -50,20 +50,20 @@ class Segment_Consumer_LibCurl extends Segment_QueueConsumer {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 
     // execute post
-    curl_exec($ch); // this method is "not allowed in the console"
+    curl_exec($ch);
 
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    // $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     // if http code does not equal 200, write to a temporary file?
     // ignore response?
 
     # Escape for shell usage.
-    $payload = escapeshellarg($payload);
+    // $payload = escapeshellarg($payload);
 
-    if ($httpCode != 200 or !$httpCode) {
-      $payload .= " >> errors.txt"; // error "command not found"
-      exec($payload, $output, $exit);
-    }
+    // if ($httpCode != 200 or !$httpCode) {
+    //   $payload .= " >> errors.txt"; // error "command not found"
+    //   exec($payload, $output, $exit);
+    // }
 
     //close connection
     curl_close($ch);
